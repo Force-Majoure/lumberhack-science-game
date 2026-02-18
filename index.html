@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>⚡ ЛАБОРАТОРИЯ ХАОСА: ХИМИЧЕСКАЯ ЭВОЛЮЦИЯ ⚡</title>
+    <title>⚡ ЛАБОРАТОРИЯ ХАОСА: ХАРДКОР ⚡</title>
     <style>
         * {
             box-sizing: border-box;
@@ -480,29 +480,37 @@
             font-size: 16px;
         }
         
-        .bonus-indicator {
-            display: inline-block;
+        .chance-indicator {
+            font-size: 14px;
+            color: #8fbfa8;
+            margin-top: 5px;
+            text-align: center;
             background: #1f2f2a;
-            padding: 5px 15px;
+            padding: 5px;
             border-radius: 30px;
-            border: 2px solid gold;
-            color: gold;
-            font-weight: bold;
-            margin-left: 10px;
-            animation: bonusGlow 2s infinite;
         }
         
-        @keyframes bonusGlow {
-            0% { box-shadow: 0 0 5px gold; }
-            50% { box-shadow: 0 0 15px gold; }
-            100% { box-shadow: 0 0 5px gold; }
+        .hardcore-badge {
+            background: linear-gradient(145deg, #4a0000, #2a0000);
+            color: #ff8888;
+            padding: 5px 15px;
+            border-radius: 30px;
+            border: 2px solid red;
+            animation: hardcorePulse 2s infinite;
+            font-weight: bold;
+        }
+        
+        @keyframes hardcorePulse {
+            0% { box-shadow: 0 0 5px red; }
+            50% { box-shadow: 0 0 20px red; }
+            100% { box-shadow: 0 0 5px red; }
         }
     </style>
 </head>
 <body>
     <div class="game" id="gameContainer">
-        <h1>⚗️ ЛАБ·ХАОС</h1>
-        <div class="subtitle">ХИМИЧЕСКАЯ ЭВОЛЮЦИЯ ⚡</div>
+        <h1>⚗️ ЛАБ·ХАОС: ХАРДКОР</h1>
+        <div class="subtitle">РЕЖИМ АБСОЛЮТНОЙ УДАЧИ 🎲</div>
         
         <div class="stats">
             <div class="stat-card">
@@ -543,14 +551,15 @@
         
         <div class="buttons">
             <button class="combine-btn" id="combineBtn" disabled>🧪 СОЕДИНИТЬ</button>
-            <button class="random-btn" id="randomBtn">🎲 ЭКСПЕРИМЕНТ</button>
+            <button class="random-btn" id="randomBtn">🎲 ЭКСПЕРИМЕНТ (5%)</button>
             <button class="hint-btn" id="hintBtn" onclick="buyHint()">💡 ПОДСКАЗКА (+5%)</button>
-            <button class="jackpot-btn" id="jackpotBtn">🎰 ДЖЕКПОТ</button>
+            <button class="jackpot-btn" id="jackpotBtn">🎰 ДЖЕКПОТ (10%)</button>
             <button id="resetBtn">🔄 СБРОС</button>
         </div>
         
         <div class="log-panel" id="log">🔋 Выберите два элемента для синтеза</div>
-        <div class="footer">⚡ Открытия охлаждают на -15% | Подсказка +5% | Джекпот - рискни! ⚡</div>
+        <div class="chance-indicator">⚡ ХАРДКОР: Эксперимент 5% | Джекпот 10% | Комбо увеличивает шансы</div>
+        <div class="footer">⚡ Открытия охлаждают на -15% | Подсказка +5% | УДАЧИ! ⚡</div>
     </div>
 
     <script>
@@ -885,14 +894,15 @@
             buyHint();
         };
         
-        // ========== ДЖЕКПОТ ==========
+        // ========== ДЖЕКПОТ (10%) ==========
         window.jackpot = function() {
             if (heat >= MAX_HEAT) return;
             
             let rand = Math.random();
+            let bonus = Math.min(combo * 2, 20); // Комбо дает до +20% к шансу
             
-            if (rand < 0.3) { // 30% - большой выигрыш
-                // Ищем редкий элемент
+            if (rand < (0.1 + bonus / 100)) { // Базовый шанс 10% + комбо
+                // Ищем редкий элемент (★4-5)
                 let available = [];
                 for (let i = 0; i < allElements.length; i++) {
                     let have = false;
@@ -902,7 +912,7 @@
                             break;
                         }
                     }
-                    if (!have && allElements[i].rarity >= 3) {
+                    if (!have && allElements[i].rarity >= 4) {
                         available.push(allElements[i]);
                     }
                 }
@@ -912,14 +922,60 @@
                     myElements.push(available[randEl]);
                     heat = Math.max(heat - 20, 0);
                     coolingEffect();
-                    logDiv.innerHTML = `🎰 ДЖЕКПОТ! Получен ${available[randEl].name} (ОХЛАЖДЕНИЕ -20%)`;
+                    combo++;
+                    logDiv.innerHTML = `🎰 ДЖЕКПОТ! Получен РЕДКИЙ ${available[randEl].name} ★${available[randEl].rarity} (ОХЛАЖДЕНИЕ -20%) Шанс ${Math.round((0.1 + bonus/100)*100)}%`;
                     logDiv.classList.add('success');
-                    showAchievement('ДЖЕКПОТ!');
+                    showAchievement('ДЖЕКПОТ! Редкий элемент!');
                 } else {
-                    heat = Math.min(heat + 10, MAX_HEAT);
-                    logDiv.innerHTML = `🎰 Все элементы уже есть! +10%`;
+                    // Если редких нет, даем любой
+                    let anyAvailable = [];
+                    for (let i = 0; i < allElements.length; i++) {
+                        let have = false;
+                        for (let j = 0; j < myElements.length; j++) {
+                            if (myElements[j].id === allElements[i].id) {
+                                have = true;
+                                break;
+                            }
+                        }
+                        if (!have) {
+                            anyAvailable.push(allElements[i]);
+                        }
+                    }
+                    
+                    if (anyAvailable.length > 0) {
+                        let randEl = Math.floor(Math.random() * anyAvailable.length);
+                        myElements.push(anyAvailable[randEl]);
+                        heat = Math.max(heat - 10, 0);
+                        coolingEffect();
+                        combo++;
+                        logDiv.innerHTML = `🎰 ДЖЕКПОТ! Получен ${anyAvailable[randEl].name} (ОХЛАЖДЕНИЕ -10%)`;
+                        logDiv.classList.add('success');
+                    } else {
+                        heat = Math.min(heat + 10, MAX_HEAT);
+                        logDiv.innerHTML = `🎰 Все элементы уже есть! +10%`;
+                        combo = 0;
+                    }
                 }
-            } else if (rand < 0.6) { // 30% - средний выигрыш
+            } else { // 90% - ПРОИГРЫШ
+                heat = Math.min(heat + 30, MAX_HEAT);
+                heatingEffect();
+                logDiv.innerHTML = `💥 ДЖЕКПОТ НЕ УДАЛСЯ! +30% (шанс был ${Math.round((0.1 + bonus/100)*100)}%)`;
+                logDiv.classList.add('warning');
+                combo = 0;
+            }
+            
+            showAllElements();
+        };
+        
+        // ========== ЭКСПЕРИМЕНТ (5%) ==========
+        window.randomElement = function() {
+            if (heat >= MAX_HEAT) return;
+            
+            let rand = Math.random();
+            let bonus = Math.min(combo, 15); // Комбо дает до +15% к шансу
+            
+            if (rand < (0.05 + bonus / 100)) { // Базовый шанс 5% + комбо
+                // Ищем доступные элементы (кроме редких)
                 let available = [];
                 for (let i = 0; i < allElements.length; i++) {
                     let have = false;
@@ -929,7 +985,7 @@
                             break;
                         }
                     }
-                    if (!have) {
+                    if (!have && allElements[i].rarity <= 3) {
                         available.push(allElements[i]);
                     }
                 }
@@ -937,18 +993,33 @@
                 if (available.length > 0) {
                     let randEl = Math.floor(Math.random() * available.length);
                     myElements.push(available[randEl]);
-                    logDiv.innerHTML = `🎰 Получен ${available[randEl].name}`;
+                    
+                    combo++;
+                    heat = Math.max(heat - 10 - combo, 0);
+                    coolingEffect();
+                    
+                    logDiv.innerHTML = `🎲 ЭКСПЕРИМЕНТ УДАЧНЫЙ! Получен ${available[randEl].name} (ОХЛАЖДЕНИЕ -${10 + combo}%) Шанс ${Math.round((0.05 + bonus/100)*100)}%`;
+                    logDiv.classList.add('success');
+                    
+                    if (available[randEl].rarity >= 3) {
+                        showAchievement('Удачный эксперимент!');
+                    }
                 } else {
-                    heat = Math.min(heat + 15, MAX_HEAT);
-                    logDiv.innerHTML = `🎰 Все элементы уже есть! +15%`;
+                    heat = Math.min(heat + 10, MAX_HEAT);
+                    logDiv.innerHTML = `🎲 Все доступные элементы открыты! +10%`;
+                    logDiv.classList.add('warning');
+                    combo = 0;
                 }
-            } else { // 40% - неудача
-                heat = Math.min(heat + 30, MAX_HEAT);
+            } else { // 95% - нагрев
+                let heatIncrease = 10 + Math.floor(Math.random() * 15); // 10-25%
+                heat = Math.min(heat + heatIncrease, MAX_HEAT);
                 heatingEffect();
-                logDiv.innerHTML = `💥 Неудача! +30%`;
+                logDiv.innerHTML = `🎲 ЭКСПЕРИМЕНТ НЕУДАЧНЫЙ! +${heatIncrease}% (шанс был ${Math.round((0.05 + bonus/100)*100)}%)`;
                 logDiv.classList.add('warning');
+                combo = 0;
             }
             
+            selected = [];
             showAllElements();
         };
         
@@ -1014,92 +1085,12 @@
                     }
                 }
             } else {
-                // Случайный шанс на открытие
-                if (Math.random() < 0.2 + combo * 0.05) { // Шанс растет с комбо
-                    // Ищем доступные элементы
-                    let available = [];
-                    for (let i = 0; i < allElements.length; i++) {
-                        let have = false;
-                        for (let j = 0; j < myElements.length; j++) {
-                            if (myElements[j].id === allElements[i].id) {
-                                have = true;
-                                break;
-                            }
-                        }
-                        if (!have && allElements[i].rarity <= 3) {
-                            available.push(allElements[i]);
-                        }
-                    }
-                    
-                    if (available.length > 0) {
-                        let rand = Math.floor(Math.random() * available.length);
-                        myElements.push(available[rand]);
-                        
-                        combo++;
-                        heat = Math.max(heat - 10, 0);
-                        coolingEffect();
-                        
-                        logDiv.innerHTML = `🎲 СЛУЧАЙНОЕ ОТКРЫТИЕ! Получен: ${available[rand].name} (ОХЛАЖДЕНИЕ -10%)`;
-                        logDiv.classList.add('success');
-                    } else {
-                        heat = Math.min(heat + 15, MAX_HEAT);
-                        combo = 0;
-                        logDiv.innerHTML = `💥 Нестабильно! +15%`;
-                        logDiv.classList.add('warning');
-                    }
-                } else {
-                    heat = Math.min(heat + 15, MAX_HEAT);
-                    combo = 0;
-                    logDiv.innerHTML = `💥 ${nameA} + ${nameB} = нестабильно +15%`;
-                    logDiv.classList.add('warning');
-                    heatingEffect();
-                }
-            }
-            
-            selected = [];
-            showAllElements();
-        };
-        
-        // ========== СЛУЧАЙНЫЙ ЭЛЕМЕНТ ==========
-        window.randomElement = function() {
-            if (heat >= MAX_HEAT) return;
-            
-            let available = [];
-            for (let i = 0; i < allElements.length; i++) {
-                let have = false;
-                for (let j = 0; j < myElements.length; j++) {
-                    if (myElements[j].id === allElements[i].id) {
-                        have = true;
-                        break;
-                    }
-                }
-                if (!have) {
-                    available.push(allElements[i]);
-                }
-            }
-            
-            if (available.length > 0) {
-                let rand = Math.floor(Math.random() * available.length);
-                let newEl = available[rand];
-                myElements.push(newEl);
-                
-                if (newEl.rarity >= 3) {
-                    heat = Math.max(heat - 10, 0);
-                    coolingEffect();
-                    logDiv.innerHTML = `🎲 ЭКСПЕРИМЕНТ: Получен ${newEl.name} ★${newEl.rarity} (ОХЛАЖДЕНИЕ -10%)`;
-                    logDiv.classList.add('success');
-                } else {
-                    heat = Math.min(heat + newEl.rarity * 3, MAX_HEAT);
-                    logDiv.innerHTML = `🎲 ЭКСПЕРИМЕНТ: Получен ${newEl.name} ★${newEl.rarity}`;
-                }
-                
-                if (newEl.rarity >= 4) {
-                    showAchievement('Редкая находка: ' + newEl.name);
-                }
-            } else {
-                heat = Math.min(heat + 20, MAX_HEAT);
-                logDiv.innerHTML = '🎲 Все элементы открыты! +20%';
+                // Неудачная комбинация
+                heat = Math.min(heat + 10, MAX_HEAT);
+                combo = 0;
+                logDiv.innerHTML = `💥 ${nameA} + ${nameB} = нестабильно +10%`;
                 logDiv.classList.add('warning');
+                heatingEffect();
             }
             
             selected = [];
@@ -1137,7 +1128,7 @@
         
         // ========== СТАРТ ==========
         resetGame();
-        logDiv.innerHTML = '⚡ Лаборатория готова! Комбо увеличивает шансы и охлаждение!';
+        logDiv.innerHTML = '⚡ ХАРДКОР РЕЖИМ: Эксперимент 5% | Джекпот 10% | Комбо увеличивает шансы!';
     </script>
 </body>
 </html>
